@@ -60,10 +60,9 @@ int main(int argc, char **argv) {
 
   memset(buf, 0, READBUFSIZE);
 
-
   if (0) { 
     strlist_t *tokens;
-    tokenize(&tokens, "asdf asdf asdf one two three four", " ");
+    tokenize(&tokens, "foo", " ");
     int i;
     for (i = 0; i < tokens->nitems; i++) {
       printf("%d: %s\n", i, tokens->items[i]);
@@ -77,7 +76,7 @@ int main(int argc, char **argv) {
     len = strlen(buf);
     len--; /* skip EOL */
     buf[len] = '\0'; /* Turn EOL into null */
-    printf("String: '%s'\n", buf);
+    //printf("String: '%s'\n", buf);
     process_line(buf, len, argc, argv);
   }
 
@@ -87,7 +86,7 @@ int main(int argc, char **argv) {
 void process_line(char *buf, int len, int argc, char **argv) {
   int i;
   for (i = 0; i < argc; i++) {
-    printf("%s\n", argv[i]);
+    //printf("%s\n", argv[i]);
     extract(argv[i], buf);
     printf(" ");
   }
@@ -97,52 +96,136 @@ void process_line(char *buf, int len, int argc, char **argv) {
 void extract(char *format, char *buf) {
   char *sep = NULL;
 
+  char *buffer = strdup(buf);
+  int nbuffer = 0;
+  int buffer_size = 1024;
+
   /* Because string literals aren't writable */
   sep = strdup(" ");
 
-  printf("extract: %s\n", format);
+  //printf("extract: %s\n", format);
 
   while (format[0] != '\0') {
     strlist_t *tokens;
     strlist_t *fields;
+    strlist_t *results;
     char *fieldstr;
 
-    tokenize(&tokens, buf, sep);
+    //printf("B: %s\n", buffer);
+    results = strlist_new();
+    tokenize(&tokens, buffer, sep);
 
     /* All of these cases will advance the format string position */
     /* This if case is a reallly lame hack */
     if (isdigit(format[0]) || format[0] == '-') {
       asprintf(&fieldstr, "%ld", strtol(format, &format, 10));
     } else if (format[0] == '{') {
+      //printf("curly\n");
       format++; /* Skip '{' */
       int fieldlen;
       fieldlen = strcspn(format, "}") + 1;
       fieldstr = malloc(fieldlen * sizeof(char));
       memset(fieldstr, 0, fieldlen * sizeof(char));
       strncpy(fieldstr, format, fieldlen - 1);
+      format += fieldlen;
     } else {
     }
 
     tokenize(&fields, fieldstr, ",");
-
-    for (int i = 0; i < fields->nitems; i++) {
-      int start, end;
-
-    }
     free(fieldstr);
 
-    //tmpbuf = tok;
-    //if (format[0] != '\0') {
-      ////printf("Shifting ahead by %d\n", tok - tmpbuf);
-      //sep[0] = format[0];
-      //format++;
-    //}
-    return;
+    int i = 0;
+    for (i = 0; i < fields->nitems; i++) {
+      long start, end;
+      strlist_t *range;
+      char *field = fields->items[i];
+      tokenize(&range, field, ":");
+
+      if (*field == ':') {
+        start = 0;
+        end = 0;
+      } else if (range->nitems == 1) {
+        start = end =  strtol(range->items[0], NULL, 10);
+        if (field[strlen(field) - 1] == ':')
+          end = (start > 0) ? tokens->nitems : 0;
+      } else {
+        start = strtol(range->items[0], NULL, 10);
+        end = strtol(range->items[1], NULL, 10);
+      }
+
+      int j;
+      if (start > end) {
+        fprintf(stderr, "start > end is invalid: %ld > %ld\n", start, end);
+        exit(1);
+      }
+
+      if ((start < 0 && end > 0) 
+          || (end < 0 && start > 0)) {
+        fprintf(stderr, "start and end must be both positive or both negative: %ld and %ld\n", start, end);
+        exit(1);
+      }
+
+      if (start == 0 && end) {
+        fprintf(stderr, "Start of '0' is invalid when an endpoint is specified: %ld and %ld\n", start, end);
+        exit(1);
+      }
+
+      /* We start indexing at 1. */
+      if (start == 0) {
+        strlist_append(results, buffer);
+      } else {
+        start--;
+        end--;
+
+        if (start < 0) {
+          start += tokens->nitems;
+          end += tokens->nitems;
+        }
+
+        if (start < 0)
+          start = 0;
+        if (end == 0)
+          end = start;
+
+        for (j = start; j < tokens->nitems && j <= end; j++) {
+          strlist_append(results, tokens->items[j]);
+        }
+      }
+      strlist_free(range);
+    }
+
+    free(buffer);
+    buffer_size = 1024;
+    nbuffer = 0;
+    buffer = malloc(buffer_size);
+    memset(buffer, 0, buffer_size);
+    for (i = 0; i < results->nitems; i++) {
+      char *item = results->items[i];
+      int len = strlen(item);
+      if (len + nbuffer > buffer_size) {
+        buffer_size = buffer_size * 2 + len + 1;
+        buffer = realloc(buffer, buffer_size);
+      }
+
+      strncpy(buffer + nbuffer, item, len);
+      nbuffer += len;
+
+      if (i < results->nitems - 1) {
+        buffer[nbuffer] = *sep;
+        nbuffer++;
+      }
+    }
+
+    if (format[0] != '\0') {
+      sep[0] = format[0];
+      format++;
+    }
     strlist_free(fields);
     strlist_free(tokens);
   }
 
-  //printf("%s", tmpbuf);
+  printf("%s", buffer);
+  free(buffer);
   //fprintf(stderr, "Distance: %d vs %d\n", tmpbuf - tmpstart, strlen(buf));
 
   free(sep);
