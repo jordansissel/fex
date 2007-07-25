@@ -178,8 +178,9 @@ void extract(char *format, char *buf) {
         end--;
 
         if (start < 0) {
-          start += tokens->nitems;
-          end += tokens->nitems;
+          /* Add 1 because start of 1 means token index 0 in C */
+          start += tokens->nitems + 1;
+          end += tokens->nitems + 1;
         }
 
         if (start < 0)
