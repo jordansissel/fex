@@ -38,6 +38,7 @@ void strlist_free(strlist_t *list) {
   int i;
   for (i = 0; i < list->nitems; i++)
     free(list->items[i]);
+  free(list->items);
   free(list);
 }
 
@@ -86,7 +87,6 @@ int main(int argc, char **argv) {
 void process_line(char *buf, int len, int argc, char **argv) {
   int i;
   for (i = 0; i < argc; i++) {
-    //printf("%s\n", argv[i]);
     extract(argv[i], buf);
     printf(" ");
   }
@@ -120,7 +120,6 @@ void extract(char *format, char *buf) {
     if (isdigit(format[0]) || format[0] == '-') {
       asprintf(&fieldstr, "%ld", strtol(format, &format, 10));
     } else if (format[0] == '{') {
-      //printf("curly\n");
       format++; /* Skip '{' */
       int fieldlen;
       fieldlen = strcspn(format, "}") + 1;
@@ -195,6 +194,7 @@ void extract(char *format, char *buf) {
       strlist_free(range);
     }
 
+    /* Free buffer then allocate a new one for the new string slice */
     free(buffer);
     buffer_size = 1024;
     nbuffer = 0;
@@ -223,14 +223,12 @@ void extract(char *format, char *buf) {
     }
     strlist_free(fields);
     strlist_free(tokens);
+    strlist_free(results);
   }
 
   printf("%s", buffer);
   free(buffer);
-  //fprintf(stderr, "Distance: %d vs %d\n", tmpbuf - tmpstart, strlen(buf));
-
   free(sep);
-  //free(tmpstart);
 }
 
 void tokenize(strlist_t **tokens, char *buf, char *sep) {
