@@ -15,6 +15,7 @@ typedef struct strlist {
   int max_items;
 } strlist_t;
 
+void usage();
 void process_line(char *buf, int len, int argc, char **argv);
 void extract(char *format, char *buf);
 void tokenize(strlist_t **tokens, char *buf, char *sep);
@@ -61,15 +62,9 @@ int main(int argc, char **argv) {
 
   memset(buf, 0, READBUFSIZE);
 
-  if (0) { 
-    strlist_t *tokens;
-    tokenize(&tokens, "foo", " ");
-    int i;
-    for (i = 0; i < tokens->nitems; i++) {
-      printf("%d: %s\n", i, tokens->items[i]);
-    }
-    strlist_free(tokens);
-    return 2;
+  if (argc == 0 || !strcmp(*argv, "-h")) {
+    usage();
+    return 0;
   }
 
   while (NULL != fgets(buf, READBUFSIZE, stdin)) {
@@ -77,11 +72,38 @@ int main(int argc, char **argv) {
     len = strlen(buf);
     len--; /* skip EOL */
     buf[len] = '\0'; /* Turn EOL into null */
-    //printf("String: '%s'\n", buf);
     process_line(buf, len, argc, argv);
   }
 
   return 0;
+}
+
+void usage() {
+  printf("usage: %s [extract1 ... extractN]\n"
+         "\n"
+         "Extract syntax is:\n"
+         "  <separator><field number(s)>\n"
+         "\n"
+         "Fields start at 1, awk style. A field number of 0 means the whole\n"
+         "string unchanged.\n"
+         "The first separator is implied as space ' '\n"
+         "You can specify multiple fields with curly braces and numbers split\n"
+         "by commas. Also valid in curly braces {} are number ranges. Number\n"
+         "ranges are similar to python array slices, split by colon.\n"
+         "\n"
+         "The first piece of your extraction code should be a number, since\n"
+         "there is always an implied separator of space.\n"
+         "Some examples:\n"
+         "  1.1    First split by ' ', then first by '.'\n"
+         "      'foo.bar baz' by '1.1' outputs 'bar'\n"
+         "  0:{1,-1}    Output the first and last split by ';'\n"
+         "      'foo:bar:baz:fizz' by '0:{1,-1}' outputs 'foo:fizz'\n"
+         "  {1:3}     Output tokens 1 through 3\n"
+         "      'foo bar baz fizz' by '{1:3}' outputs 'foo bar baz'\n"
+         "\n"
+         " * Make sure you quote your extractions, or your shell may perform\n"
+         "some unintended expansion\n"
+        , prog);
 }
 
 void process_line(char *buf, int len, int argc, char **argv) {
