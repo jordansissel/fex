@@ -102,7 +102,7 @@ void usage() {
          "      'foo bar baz fizz' by '{1:3}' outputs 'foo bar baz'\n"
          "\n"
          " * Make sure you quote your extractions, or your shell may perform\n"
-         "some unintended expansion\n"
+         "   some unintended expansion\n"
         , prog);
 }
 
