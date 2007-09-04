@@ -1,3 +1,6 @@
+/*
+ * Field EXtraction tool
+ */
 
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -95,7 +98,7 @@ void usage() {
          "there is always an implied separator of space.\n"
          "Some examples:\n"
          "  1.1    First split by ' ', then first by '.'\n"
-         "      'foo.bar baz' by '1.1' outputs 'bar'\n"
+         "      'foo.bar baz' by '1.1' outputs 'foo'\n"
          "  0:{1,-1}    Output the first and last split by ';'\n"
          "      'foo:bar:baz:fizz' by '0:{1,-1}' outputs 'foo:fizz'\n"
          "  {1:3}     Output tokens 1 through 3\n"
