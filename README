@@ -1,0 +1,8 @@
+Field Extractor
+
+fex works like cut or awk in its field navigation, but allows you to specify
+token-based fields in a much more concise, flexible, and readable way.
+
+It steals the field extraction syntax much from ksb's wonderful xapply tool.
+
+http://www.semicomplete.com/projects/fex

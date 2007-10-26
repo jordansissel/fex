@@ -16,7 +16,7 @@ package: test-package-build create-package
 create-package:
 	NAME=fex-`date +%Y%m%d`; \
 	mkdir $${NAME}; \
-	rsync --exclude .svn -av `ls *.c *.h README Makefile* 2> /dev/null` $${NAME}/; \
+	rsync --exclude .svn -av `ls -d *.c *.h t README Makefile* 2> /dev/null` $${NAME}/; \
 	tar -zcf $${NAME}.tar.gz $${NAME}/; \
 	rm -rf $${NAME}/
 
