@@ -8,6 +8,17 @@
 #include <string.h>
 #include <ctype.h>
 
+/* Options and Todos
+ * What if fieldnum > fields?
+ *   1) Error
+ *   2) Empty (current behavior)
+ *   3) Return last field
+ *
+ * Set output field separator?
+ *
+ * Support '3N' aka, return every i[3 * n] for (3*n < num_fields) ?
+ */
+
 char *prog = NULL;
 
 #define READBUFSIZE (64<<10)
@@ -82,9 +93,8 @@ int main(int argc, char **argv) {
 }
 
 void usage() {
-  printf("usage: %s [extract1 ... extractN]\n"
-         "\n"
-         "Extract syntax is:\n"
+  printf("usage: %s [extract1 ... extractN]\n", prog);
+  printf("Extract syntax is:\n"
          "  <separator><field number(s)>\n"
          "\n"
          "Fields start at 1, awk style. A field number of 0 means the whole\n"
@@ -99,14 +109,13 @@ void usage() {
          "Some examples:\n"
          "  1.1    First split by ' ', then first by '.'\n"
          "      'foo.bar baz' by '1.1' outputs 'foo'\n"
-         "  0:{1,-1}    Output the first and last split by ';'\n"
+         "  0:{1,-1}    Output the first and last split by ':'\n"
          "      'foo:bar:baz:fizz' by '0:{1,-1}' outputs 'foo:fizz'\n"
          "  {1:3}     Output tokens 1 through 3\n"
          "      'foo bar baz fizz' by '{1:3}' outputs 'foo bar baz'\n"
          "\n"
          " * Make sure you quote your extractions, or your shell may perform\n"
-         "   some unintended expansion\n"
-        , prog);
+         "   some unintended expansion\n");
 }
 
 void process_line(char *buf, int len, int argc, char **argv) {
@@ -128,6 +137,13 @@ void extract(char *format, char *buf) {
   /* Because string literals aren't writable */
   sep = strdup(" ");
 
+  /* If first char is not a number or '{', use it to split instead of the
+   * default of space */
+  if (!isdigit(format[0]) && (format[0] != '{')) {
+    sep[0] = format[0];
+    format++;
+  }
+
   //printf("extract: %s\n", format);
 
   while (format[0] != '\0') {
@@ -136,7 +152,6 @@ void extract(char *format, char *buf) {
     strlist_t *results;
     char *fieldstr;
 
-    //printf("B: %s\n", buffer);
     results = strlist_new();
     tokenize(&tokens, buffer, sep);
 
@@ -153,8 +168,11 @@ void extract(char *format, char *buf) {
       strncpy(fieldstr, format, fieldlen - 1);
       format += fieldlen;
     } else {
+      /* Error, this format is invalid? */
+      fprintf(stderr, "Invalid format... %s\n", format);
     }
 
+    /* fieldstr is the field selector(s). ie; "1,3" in a{1,3} */
     tokenize(&fields, fieldstr, ",");
     free(fieldstr);
 
@@ -165,32 +183,42 @@ void extract(char *format, char *buf) {
       char *field = fields->items[i];
       tokenize(&range, field, ":");
 
-      if (*field == ':') {
-        start = 0;
-        end = 0;
-      } else if (range->nitems == 1) {
+      if (range->nitems == 1) {
+        /* Support {N} and {N:} */
         start = end =  strtol(range->items[0], NULL, 10);
+
+        /* Support {:N} */
         if (field[strlen(field) - 1] == ':')
           end = (start > 0) ? tokens->nitems : 0;
+
+        /* Support {N:} */
+        if (field[0] == ':')
+          start = 1;
+      } else if (*field == ':') { 
+        /* Support {:} as whole all fields */
+        start = 0;
+        end = 0;
       } else {
         start = strtol(range->items[0], NULL, 10);
         end = strtol(range->items[1], NULL, 10);
       }
 
       int j;
+
+      if (start < 0)
+        start = tokens->nitems + start;
+      if (end < 0)
+        end = tokens->nitems + end;
+
       if (start > end) {
         fprintf(stderr, "start > end is invalid: %ld > %ld\n", start, end);
         exit(1);
       }
 
-      if ((start < 0 && end > 0) 
-          || (end < 0 && start > 0)) {
-        fprintf(stderr, "start and end must be both positive or both negative: %ld and %ld\n", start, end);
-        exit(1);
-      }
-
-      if (start == 0 && end) {
-        fprintf(stderr, "Start of '0' is invalid when an endpoint is specified: %ld and %ld\n", start, end);
+      if (start == 0 && end != 0) {
+        fprintf(stderr, 
+                "Start of '0' is invalid when an endpoint is specified: %ld "
+                "and %ld\n", start, end);
         exit(1);
       }
 
@@ -269,6 +297,7 @@ void tokenize(strlist_t **tokens, char *buf, char *sep) {
 
   while ((tok = strtok_r(strptr, sep, &tokctx)) != NULL) {
     strptr = NULL;
+    printf("%s\n", tok);
     strlist_append(*tokens, tok);
   }
   free(dupbuf);
