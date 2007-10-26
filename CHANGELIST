@@ -1,0 +1,12 @@
+20071026 - First major release
+  - Added some tests
+  - If you want to specify a different first split token, the first character
+    can be any non-digit character which is not '-' or '{'.
+
+    These are now equivalent:
+    % echo "foo/bar/baz" | fex 0/2
+    bar
+    % echo "foo/bar/baz" | fex /2
+    bar
+
+    Previously, this would give an error due to intentional design.
