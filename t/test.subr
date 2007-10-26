@@ -1,0 +1,39 @@
+#!/bin/sh
+
+runfex() {
+  TESTNAME=$1
+  shift
+  ../fex $(cat args/$TESTNAME) < input/$TESTNAME
+}
+
+try() {
+  OUTPUT=`mktemp /tmp/fex.test.XXXXX`
+  DIFF=`mktemp /tmp/fex.test.XXXXX`
+  TESTNAME=$1
+  shift
+
+  runfex $TESTNAME "$@" > $OUTPUT 2> /dev/null
+  compare $OUTPUT output/$TESTNAME > $DIFF
+  EXITCODE=$?
+  if [ "$EXITCODE" -eq 0 ] ; then
+    echo "Test ($0/$TESTNAME) OK: $1" 
+  else
+    echo "Test ($0/TESTNAME) failed: $1"
+    echo "Output:"
+    cat $DIFF
+  fi
+  rm $OUTPUT $DIFF
+  return $EXITCODE
+}
+
+try_self() {
+  # $1 =~ should be test_*.sh
+  SELF=$1
+  TESTNAME=`echo "$SELF" | sed -e 's/^test_//; s/\.sh$//;'`
+  try $TESTNAME
+}
+
+compare() {
+  diff -u $1 $2
+  return $?
+}

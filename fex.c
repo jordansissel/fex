@@ -139,7 +139,7 @@ void extract(char *format, char *buf) {
 
   /* If first char is not a number or '{', use it to split instead of the
    * default of space */
-  if (!isdigit(format[0]) && (format[0] != '{')) {
+  if (!isdigit(format[0]) && (format[0] != '{') && (format[0] != '-')) {
     sep[0] = format[0];
     format++;
   }
@@ -177,6 +177,8 @@ void extract(char *format, char *buf) {
     free(fieldstr);
 
     int i = 0;
+    //printf("\n");
+    //printf("nfields selected: %d", fields->nitems);
     for (i = 0; i < fields->nitems; i++) {
       long start, end;
       strlist_t *range;
@@ -205,19 +207,38 @@ void extract(char *format, char *buf) {
 
       int j;
 
-      if (start < 0)
-        start = tokens->nitems + start;
-      if (end < 0)
-        end = tokens->nitems + end;
+      /* Add 1 here because field indexing starts at 1, not 0 */
+      if (start < 0) {
+        start += tokens->nitems + 1;
+        /* For sanity, negative indexing shouldn't result in <= 0 values. */
+        /* XXX: Throw an error for a bad index? */
+        if (start < 0)
+          start = 1;
+      }
+
+      if (end < 0) {
+        end += tokens->nitems + 1;
+        if (end < 0)
+          end = start;
+      }
+
+      //printf("s/e= %ld %ld\n", start, end);
+
+      /* If end is 0, and set end to start. End of 0 doesn't make sense */
+      if (end == 0)
+        end = start;
+
+      //printf("%ld %ld\n", start, end);
 
       if (start > end) {
         fprintf(stderr, "start > end is invalid: %ld > %ld\n", start, end);
         exit(1);
       }
 
-      if (start == 0 && end != 0) {
+      if (((start == 0) && (end != 0))
+          || ((start != 0) && (end == 0))) {
         fprintf(stderr, 
-                "Start of '0' is invalid when an endpoint is specified: %ld "
+                "Start or end cannot be 0 when the other is not 0: %ld "
                 "and %ld\n", start, end);
         exit(1);
       }
@@ -228,17 +249,6 @@ void extract(char *format, char *buf) {
       } else {
         start--;
         end--;
-
-        if (start < 0) {
-          /* Add 1 because start of 1 means token index 0 in C */
-          start += tokens->nitems + 1;
-          end += tokens->nitems + 1;
-        }
-
-        if (start < 0)
-          start = 0;
-        if (end == 0)
-          end = start;
 
         for (j = start; j < tokens->nitems && j <= end; j++) {
           strlist_append(results, tokens->items[j]);
@@ -297,7 +307,6 @@ void tokenize(strlist_t **tokens, char *buf, char *sep) {
 
   while ((tok = strtok_r(strptr, sep, &tokctx)) != NULL) {
     strptr = NULL;
-    printf("%s\n", tok);
     strlist_append(*tokens, tok);
   }
   free(dupbuf);
