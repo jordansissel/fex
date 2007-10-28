@@ -1,3 +1,8 @@
+20071028 -
+  - Add snprintf_2.2 for platform (aka Solaris) lacking asprintf.
+  - Fix 'make package' to work in Solaris
+  - Add COPYRIGHT (BSD License)
+
 20071026 - First major release
   - Added some tests
   - If you want to specify a different first split token, the first character
