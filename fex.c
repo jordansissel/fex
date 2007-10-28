@@ -8,6 +8,12 @@
 #include <string.h>
 #include <ctype.h>
 
+#ifdef NEED_SNPRINTF_2_2
+#define NEED_ASPRINTF
+#include <stdarg.h>
+#include "snprintf_2.2/snprintf.h"
+#endif
+
 /* Options and Todos
  * What if fieldnum > fields?
  *   1) Error

@@ -1,12 +1,14 @@
 CFLAGS=-g -Wall
 CC=gcc
 STDIN_CC=-x c
+SNPRINTF_DEF=`sh need_snprintf.sh > /dev/null && echo "-DNEED_SNPRINTF_2_2"`
+SNPRINTF_CC=`sh need_snprintf.sh`
 
 fex: fex.o
-	$(CC) $(CFLAGS) fex.o `sh need_snprintf.sh` -o $@
+	$(CC) $(CFLAGS) fex.o $(SNPRINTF_CC) -o $@
 
 %.o: %.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) $(SNPRINTF_DEF) $(CFLAGS) $< -c -o $@
 
 clean:
 	rm -f *.o */*.o || true
