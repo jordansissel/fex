@@ -18,11 +18,16 @@ out=`mktemp XXXXXXXX`
 echo "#include <stdio.h>" > $tmp
 echo "int main() { char *foo; asprintf(&foo, \"testing\"); }" >> $tmp
 
+ret=1
+
 ${CC} $CFLAGS $tmp -o $out 2> /dev/null
+
 if [ $? -ne 0 ] ; then
   cd snprintf_2.2/
   make CC=$CC CFLAGS="-DNEED_ASPRINTF"  >&2
   echo "snprintf_2.2/snprintf.o"
+  ret=0
 fi
- 
+
 rm -f $out $tmp
+exit $ret
