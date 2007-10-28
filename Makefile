@@ -1,25 +1,14 @@
 CFLAGS=-g -Wall
 CC=gcc
 
-fex: fex.o snprintf_2.2/snprintf.o
-	$(CC) $(CFLAGS) $^ -o $@
-
-snprintf_2.2/snprintf.o:
-	# Test for asprintf
-	echo "#include <stdio.h>\nint main() { asprintf; }" \
-	| $(CC) -D_GNU_SOURCE -x c /dev/stdin; \
-	if [ $$? -ne 0 ] ; then \
-		make -C snprintf_2.2; \
-	else \
-		touch $@; \
-	fi
+fex: fex.o
+	$(CC) $(CFLAGS) $< `sh need_snprintf.sh` -o $@
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
 	rm -f *.o */*.o || true
-
 
 package: test-package-build create-package
 
