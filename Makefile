@@ -20,14 +20,16 @@ package: test-package-build create-package
 create-package:
 	NAME=fex-`date +%Y%m%d`; \
 	mkdir $${NAME}; \
-	rsync --exclude .svn -av `ls -d $(PACKAGE_FILES)` $${NAME}/; \
-	tar -zcf $${NAME}.tar.gz $${NAME}/; \
+	rsync --exclude .svn -a `ls -d $(PACKAGE_FILES) 2> /dev/null` $${NAME}/; \
+	tar -cf - $${NAME}/ \
+	| gzip -c > $${NAME}.tar.gz; \
 	rm -rf $${NAME}/
 
 # Make sure the package we're building compiles.
 test-package-build: create-package
 	NAME=fex-`date +%Y%m%d`; \
-	tar -zxf $${NAME}.tar.gz; \
+	gzip -dc $${NAME}.tar.gz \
+	| tar -xf -; \
 	make -C $${NAME} fex; \
 	rm -rf $${NAME}/
 	rm -f $${NAME}.tar.gz
