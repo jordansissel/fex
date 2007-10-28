@@ -1,8 +1,9 @@
 CFLAGS=-g -Wall
 CC=gcc
+STDIN_CC=-x c
 
 fex: fex.o
-	$(CC) $(CFLAGS) $< `sh need_snprintf.sh` -o $@
+	$(CC) $(CFLAGS) fex.o `sh need_snprintf.sh` -o $@
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) $< -o $@

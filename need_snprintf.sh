@@ -12,8 +12,8 @@ else
   CFLAGS="-D_GNU_SOURCE -pipe -x c"
 fi
 
-tmp=`mktemp`
-out=`mktemp`
+tmp=`mktemp XXXXXXXX`
+out=`mktemp XXXXXXXX`
 
 echo "#include <stdio.h>" > $tmp
 echo "int main() { char *foo; asprintf(&foo, \"testing\"); }" >> $tmp
