@@ -28,6 +28,7 @@ create-package:
 # Make sure the package we're building compiles.
 test-package-build: create-package
 	NAME=fex-`date +%Y%m%d`; \
+	echo "Testing to build of $${NAME}"; \
 	gzip -dc $${NAME}.tar.gz \
 	| tar -xf -; \
 	make -C $${NAME} fex; \
