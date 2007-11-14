@@ -4,7 +4,7 @@ STDIN_CC=-x c
 SNPRINTF_DEF=`sh need_snprintf.sh > /dev/null && echo "-DNEED_SNPRINTF_2_2"`
 SNPRINTF_CC=`sh need_snprintf.sh`
 PACKAGE_FILES=*.c *.h t snprintf_2.2 need_snprintf.sh \
-  CHANGELIST README Makefile*
+  CHANGELIST COPYRIGHT README Makefile*
 
 fex: fex.o
 	$(CC) $(CFLAGS) fex.o $(SNPRINTF_CC) -o $@

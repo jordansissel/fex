@@ -28,7 +28,6 @@
  */
 
 static char *prog = NULL;
-static char *(*input_tokenizer)(char *, const char*, char **);
 
 #define READBUFSIZE (64<<10)
 
@@ -75,13 +74,6 @@ int main(int argc, char **argv) {
   if (argc == 0 || !strcmp(*argv, "-h")) {
     usage();
     return 0;
-  }
-
-  if (!strcmp(*argv, "-n")) {
-    input_tokenizer = tokenizer_nongreedy;
-    argv++; argc--;
-  } else {
-    input_tokenizer = tokenizer_greedy;
   }
 
   while (NULL != fgets(buf, READBUFSIZE, stdin)) {
@@ -140,6 +132,7 @@ char *extract(char *format, char *buf) {
   char *buffer = strdup(buf);
   int nbuffer = 0;
   int buffer_size = 1024;
+  char *(*tokenizer)(char *, const char*, char **);
 
   /* strdup() because string literals aren't writable */
   sep = strdup(" ");
@@ -159,8 +152,9 @@ char *extract(char *format, char *buf) {
     strlist_t *results;
     char *fieldstr;
 
+    tokenizer = tokenizer_greedy;
+
     results = strlist_new();
-    split(&tokens, buffer, sep, input_tokenizer);
 
     /* All of these cases will advance the format string position */
     /* This if case is a reallly lame hack */
@@ -169,12 +163,18 @@ char *extract(char *format, char *buf) {
     } else if (format[0] == '{') {
       int fieldlen;
       format++; /* Skip '{' */
+      if (format[0] == '?') {
+        printf("Nongreedy\n");
+        format++;
+        tokenizer = tokenizer_nongreedy;
+      }
       fieldlen = strcspn(format, "}") + 1;
       if (format[fieldlen - 1] != '}') {
         fprintf(stderr, "Could not find closing '}'. Bad format: %s\n",
                (format - 1));
         exit(1);
       }
+
       fieldstr = malloc(fieldlen * sizeof(char));
       memset(fieldstr, 0, fieldlen * sizeof(char));
       strncpy(fieldstr, format, fieldlen - 1);
@@ -183,6 +183,9 @@ char *extract(char *format, char *buf) {
       /* Error, this format is invalid? */
       fprintf(stderr, "Invalid format... %s\n", format);
     }
+
+    /* Split the input by sep using tokenizer */
+    split(&tokens, buffer, sep, tokenizer);
 
     /* fieldstr is the field selector(s). ie; "1,3" in a{1,3} */
     split(&fields, fieldstr, ",", tokenizer_greedy);
