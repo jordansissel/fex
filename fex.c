@@ -14,6 +14,8 @@
 #include "snprintf_2.2/snprintf.h"
 #endif
 
+#include "fex.h"
+
 /* Options and Todos
  * What if fieldnum > fields?
  *   1) Error
@@ -25,24 +27,12 @@
  * Support '3N' aka, return every i[3 * n] for (3*n < num_fields) ?
  */
 
-char *prog = NULL;
+static char *prog = NULL;
+static char *(*input_tokenizer)(char *, const char*, char **);
 
 #define READBUFSIZE (64<<10)
 
-typedef struct strlist {
-  char **items;
-  int nitems;
-  int max_items;
-} strlist_t;
-
 void usage();
-void process_line(char *buf, int len, int argc, char **argv);
-void extract(char *format, char *buf);
-void tokenize(strlist_t **tokens, char *buf, char *sep);
-
-strlist_t* strlist_new();
-void strlist_free(strlist_t *list);
-void strlist_append(strlist_t *list, char *str);
 
 strlist_t* strlist_new() {
   strlist_t *list;
@@ -87,6 +77,13 @@ int main(int argc, char **argv) {
     return 0;
   }
 
+  if (!strcmp(*argv, "-n")) {
+    input_tokenizer = tokenizer_nongreedy;
+    argv++; argc--;
+  } else {
+    input_tokenizer = tokenizer_greedy;
+  }
+
   while (NULL != fgets(buf, READBUFSIZE, stdin)) {
     int len;
     len = strlen(buf);
@@ -125,22 +122,26 @@ void usage() {
 }
 
 void process_line(char *buf, int len, int argc, char **argv) {
-  int i;
+  int i = 0;
+  char *field = NULL;
   for (i = 0; i < argc; i++) {
-    extract(argv[i], buf);
-    printf(" ");
+    field = extract(argv[i], buf);
+    printf(field);
+    free(field);
+    if (i <= argc - 1)
+      printf(" ");
   }
   printf("\n");
 }
 
-void extract(char *format, char *buf) {
+char *extract(char *format, char *buf) {
   char *sep = NULL;
 
   char *buffer = strdup(buf);
   int nbuffer = 0;
   int buffer_size = 1024;
 
-  /* Because string literals aren't writable */
+  /* strdup() because string literals aren't writable */
   sep = strdup(" ");
 
   /* If first char is not a number or '{', use it to split instead of the
@@ -159,16 +160,21 @@ void extract(char *format, char *buf) {
     char *fieldstr;
 
     results = strlist_new();
-    tokenize(&tokens, buffer, sep);
+    split(&tokens, buffer, sep, input_tokenizer);
 
     /* All of these cases will advance the format string position */
     /* This if case is a reallly lame hack */
     if (isdigit(format[0]) || format[0] == '-') {
       asprintf(&fieldstr, "%ld", strtol(format, &format, 10));
     } else if (format[0] == '{') {
-      format++; /* Skip '{' */
       int fieldlen;
+      format++; /* Skip '{' */
       fieldlen = strcspn(format, "}") + 1;
+      if (format[fieldlen - 1] != '}') {
+        fprintf(stderr, "Could not find closing '}'. Bad format: %s\n",
+               (format - 1));
+        exit(1);
+      }
       fieldstr = malloc(fieldlen * sizeof(char));
       memset(fieldstr, 0, fieldlen * sizeof(char));
       strncpy(fieldstr, format, fieldlen - 1);
@@ -179,7 +185,7 @@ void extract(char *format, char *buf) {
     }
 
     /* fieldstr is the field selector(s). ie; "1,3" in a{1,3} */
-    tokenize(&fields, fieldstr, ",");
+    split(&fields, fieldstr, ",", tokenizer_greedy);
     free(fieldstr);
 
     int i = 0;
@@ -189,7 +195,7 @@ void extract(char *format, char *buf) {
       long start, end;
       strlist_t *range;
       char *field = fields->items[i];
-      tokenize(&range, field, ":");
+      split(&range, field, ":", tokenizer_greedy);
 
       if (range->nitems == 1) {
         /* Support {N} and {N:} */
@@ -295,12 +301,13 @@ void extract(char *format, char *buf) {
     strlist_free(results);
   }
 
-  printf("%s", buffer);
-  free(buffer);
   free(sep);
+  return buffer;
 }
 
-void tokenize(strlist_t **tokens, char *buf, char *sep) {
+void split(strlist_t **tokens, char *buf, char *sep, 
+           char *(*tokenizer)(char *, const char*, char **)) {
+
   char *strptr = NULL;
   char *tokctx;
   char *dupbuf = NULL;
@@ -311,9 +318,37 @@ void tokenize(strlist_t **tokens, char *buf, char *sep) {
 
   *tokens = strlist_new();
 
-  while ((tok = strtok_r(strptr, sep, &tokctx)) != NULL) {
+  //printf("Split: '%s' on '%s'\n", buf, sep);
+  while ((tok = tokenizer(strptr, sep, &tokctx)) != NULL) {
     strptr = NULL;
     strlist_append(*tokens, tok);
   }
   free(dupbuf);
+}
+
+char *tokenizer_greedy(char *str, const char *sep, char **last) {
+  return strtok_r(str, sep, last);
+}
+
+char *tokenizer_nongreedy(char *str, const char *sep, char **last) {
+  int next_tok;
+
+  if (str == NULL) {
+    str = *last;
+  } else {
+    *last = str;
+  }
+
+  if (*str == '\0') {
+    return NULL;
+  }
+  //printf("strtok '%s' '%s'\n", str, sep);
+  next_tok = strcspn(str, sep);
+
+  str[next_tok] = '\0';
+  *last += next_tok + 1;
+  //printf("str: %s\n", str);
+  //printf("  Pos: %d\n", next_tok);
+  //printf("  remain: %s\n", *last);
+  return str;
 }
