@@ -6,7 +6,7 @@ TESTS=
 if [ $# -gt 0 ]; then 
   TESTS="$@"
 else
-  TESTS="basic numrange multifields othersplit multisplit"
+  TESTS="basic numrange multifields othersplit multisplit greedy nongreedy"
 fi
 
 set -- $TESTS

@@ -164,7 +164,7 @@ char *extract(char *format, char *buf) {
       int fieldlen;
       format++; /* Skip '{' */
       if (format[0] == '?') {
-        printf("Nongreedy\n");
+        //printf("Nongreedy\n");
         format++;
         tokenizer = tokenizer_nongreedy;
       }
