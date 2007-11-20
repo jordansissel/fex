@@ -1,3 +1,13 @@
+20071119 -
+   - Add nongreedy tokenizer. Same semantics of strtok_r(), but doesn't skip
+     empty tokens.
+  - Renamed tokenizer to split, since really that's what it was doing.
+ - You can invoke the nongreedy tokenizer by using '?' as the first character
+   of a {} set:
+     args: :{?4,6}
+     input: one:::four::six
+     output: four:six
+
 20071028 -
   - Add snprintf_2.2 for platform (aka Solaris) lacking asprintf.
   - Fix 'make package' to work in Solaris
