@@ -158,7 +158,8 @@ char *extract(char *format, char *buf) {
 
     /* All of these cases will advance the format string position */
     /* This if case is a reallly lame hack */
-    if (isdigit(format[0]) || format[0] == '-') {
+    //printf("%s\n", format);
+    if (isdigit(format[0]) || (format[0] == '-' && isdigit(format[1]))) {
       asprintf(&fieldstr, "%ld", strtol(format, &format, 10));
     } else if (format[0] == '{') {
       int fieldlen;
@@ -182,6 +183,7 @@ char *extract(char *format, char *buf) {
     } else {
       /* Error, this format is invalid? */
       fprintf(stderr, "Invalid format... %s\n", format);
+      exit(1);
     }
 
     /* Split the input by sep using tokenizer */
