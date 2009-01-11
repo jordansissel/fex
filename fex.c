@@ -204,7 +204,7 @@ char *extract(char *format, char *buf) {
 
       if (range->nitems == 1) {
         /* Support {N} and {N:} */
-        start = end =  strtol(range->items[0], NULL, 10);
+        start = end = strtol(range->items[0], NULL, 10);
 
         /* Support {:N} */
         if (field[strlen(field) - 1] == ':')
