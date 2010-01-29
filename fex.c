@@ -118,9 +118,9 @@ void process_line(char *buf, int len, int argc, char **argv) {
   char *field = NULL;
   for (i = 0; i < argc; i++) {
     field = extract(argv[i], buf);
-    printf(field);
+    printf("%s", field);
     free(field);
-    if (i <= argc - 1)
+    if (i < argc - 1)
       printf(" ");
   }
   printf("\n");
