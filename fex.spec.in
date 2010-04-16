@@ -6,7 +6,8 @@ URL: http://www.semicomplete.com/projects/fex/
 Source0:  http://semicomplete.googlecode.com/files/%{name}-%{version}.tar.gz
 Summary: field split/extraction like cut/awk with less typing
 Group: Applications/System
-BuildArch: %{arch}
+BuildRoot:    %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
 
 %description
 Fex is a powerful field extraction tool. Fex provides a very concise language

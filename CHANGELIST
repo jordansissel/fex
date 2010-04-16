@@ -1,3 +1,8 @@
+1.20100416.*
+  - Trim extra trailing whitespace
+  - Fix crashing
+  - Provide rpm spec
+
 20071119 -
   - Add nongreedy tokenizer. Same semantics of strtok_r(), but doesn't skip
     empty tokens.
