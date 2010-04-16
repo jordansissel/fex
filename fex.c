@@ -15,6 +15,7 @@
 #endif
 
 #include "fex.h"
+#include "fex_version.h"
 
 /* Options and Todos
  * What if fieldnum > fields?
@@ -73,6 +74,11 @@ int main(int argc, char **argv) {
 
   if (argc == 0 || !strcmp(*argv, "-h")) {
     usage();
+    return 0;
+  }
+
+  if (argc == 1 && !strcmp(*argv, "-v")) {
+    printf("%s\n", FEX_VERSION);
     return 0;
   }
 

@@ -1,0 +1,31 @@
+Name: fex
+Version: %{version}
+Release: 1
+License: BSD
+URL: http://www.semicomplete.com/projects/fex/
+Source0:  http://semicomplete.googlecode.com/files/%{name}-%{version}.tar.gz
+Summary: field split/extraction like cut/awk with less typing
+Group: Applications/System
+BuildArch: %{arch}
+
+%description
+Fex is a powerful field extraction tool. Fex provides a very concise language
+for tokenizeing strings and extracting fields.
+
+%prep
+%setup
+
+%build
+make all
+
+%install
+rm -rf %{buildroot}
+make install DESTDIR=%{buildroot} PREFIX="/usr"
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-, root, root, 0755)
+/usr/bin/fex
+

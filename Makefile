@@ -4,34 +4,65 @@ STDIN_CC=-x c
 SNPRINTF_DEF=`sh need_snprintf.sh > /dev/null && echo "-DNEED_SNPRINTF_2_2"`
 SNPRINTF_CC=`sh need_snprintf.sh`
 PACKAGE_FILES=*.c *.h t snprintf_2.2 need_snprintf.sh \
-  CHANGELIST COPYRIGHT README Makefile*
+  CHANGELIST COPYRIGHT README Makefile* fex.spec
+
+DESTDIR?=
+PREFIX?=/usr/local
+INSTALLBIN?=$(PREFIX)/bin
+INSTALLLIB?=$(PREFIX)/lib
+INSTALLMAN?=$(PREFIX)/man
+INSTALLINCLUDE?=$(PREFIX)/include
+
+DPREFIX=$(DESTDIR)$(PREFIX)
+DINSTALLBIN=$(DESTDIR)$(INSTALLBIN)
+DINSTALLLIB=$(DESTDIR)$(INSTALLLIB)
+DINSTALLMAN=$(DESTDIR)$(INSTALLMAN)
+DINSTALLINCLUDE=$(DESTDIR)$(INSTALLINCLUDE)
+
+VERSION=$(shell sh version.sh)
+PACKAGE=fex-$(VERSION)
+
+all: fex
+
+install: fex
+	install -d $(DINSTALLBIN)
+	install -m 755 fex $(DINSTALLBIN)/
 
 fex: fex.o
 	$(CC) $(CFLAGS) fex.o $(SNPRINTF_CC) -o $@
 
+fex.o: fex_version.h
+
+fex_version.h:
+	sh version.sh --header > $@
+
+VERSION:
+	sh version.sh --shell > $@
+
 %.o: %.c
 	$(CC) $(SNPRINTF_DEF) $(CFLAGS) $< -c -o $@
 
+fex.spec: fex.spec.in
+	sed -e 's/%{version}/$(VERSION)/' $< > $@
+
 clean:
-	rm -f *.o */*.o || true
+	rm -f fex *.o */*.o VERSION fex_version.h fex.spec || true
 
 package: test-package-build create-package
 
-create-package:
-	NAME=fex-`date +%Y%m%d`; \
-	mkdir $${NAME}; \
-	rsync --exclude .svn -a `ls -d $(PACKAGE_FILES) 2> /dev/null` $${NAME}/; \
-	tar -cf - $${NAME}/ \
-	| gzip -c > $${NAME}.tar.gz; \
-	rm -rf $${NAME}/
+pre-package:
+	rm -f VERSION fex_version.h fex.spec
+
+create-package: pre-package fex_version.h VERSION fex.spec
+	mkdir $(PACKAGE)
+	rsync --exclude .svn -a `ls -d $(PACKAGE_FILES) 2> /dev/null` $(PACKAGE)/
+	tar -zcf $(PACKAGE).tar.gz $(PACKAGE)/
+	rm -rf $(PACKAGE)
 
 # Make sure the package we're building compiles.
 test-package-build: create-package
-	NAME=fex-`date +%Y%m%d`; \
-	echo "Testing to build of $${NAME}"; \
-	gzip -dc $${NAME}.tar.gz \
-	| tar -xf -; \
-	make -C $${NAME} fex; \
-	rm -rf $${NAME}/
-	rm -f $${NAME}.tar.gz
+	echo "Testing to build of $(PACKAGE)"
+	tar -zxf $(PACKAGE).tar.gz
+	make -C $(PACKAGE) fex
+	rm -rf $(PACKAGE)
 
