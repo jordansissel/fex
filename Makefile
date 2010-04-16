@@ -54,13 +54,7 @@ pre-package:
 	rm -f VERSION fex_version.h fex.spec
 
 rpm: package
-	tmp=$$(mktemp -d); \
-	arch=$$(uname -m); \
-	rel=$$(awk '/^Release:/ { print $$2 }' fex.spec); \
-	rpmbuild -tb --define "arch $${arch}" $(PACKAGE).tar.gz \
-	         --define "_topdir $$tmp" --buildroot "$$tmp/BUILD.fex"; \
-	mv $$tmp/RPMS/$${arch}/$(PACKAGE)-$${rel}.$${arch}.rpm .; \
-	rm -r $$tmp
+	rpmbuild -tb $(PACKAGE).tar.gz
 
 create-package: pre-package fex_version.h VERSION fex.spec
 	mkdir $(PACKAGE)
