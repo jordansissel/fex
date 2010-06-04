@@ -24,6 +24,9 @@ PACKAGE=fex-$(VERSION)
 
 all: fex
 
+test:
+	cd t; sh test.sh
+
 install: fex
 	install -d $(DINSTALLBIN)
 	install -m 755 fex $(DINSTALLBIN)/
@@ -48,7 +51,7 @@ fex.spec: fex.spec.in
 clean:
 	rm -f fex *.o */*.o VERSION fex_version.h fex.spec || true
 
-package: test-package-build create-package
+package: test-package create-package
 
 pre-package:
 	rm -f VERSION fex_version.h fex.spec
@@ -63,9 +66,9 @@ create-package: pre-package fex_version.h VERSION fex.spec
 	rm -rf $(PACKAGE)
 
 # Make sure the package we're building compiles.
-test-package-build: create-package
+test-package: create-package
 	echo "Testing to build of $(PACKAGE)"
 	tar -zxf $(PACKAGE).tar.gz
-	make -C $(PACKAGE) fex
+	make -C $(PACKAGE) fex test
 	rm -rf $(PACKAGE)
 

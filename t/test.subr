@@ -1,9 +1,10 @@
 #!/bin/sh
 
+FEX=../fex
 runfex() {
   TESTNAME=$1
   shift
-  ../fex $(cat args/$TESTNAME) < input/$TESTNAME
+  $FEX $(cat args/$TESTNAME) < input/$TESTNAME
 }
 
 try() {
@@ -12,6 +13,7 @@ try() {
   TESTNAME=$1
   shift
 
+  [ ! -f $FEX ] && make -C ../ fex
   runfex $TESTNAME "$@" > $OUTPUT 2> /dev/null
   compare $OUTPUT output/$TESTNAME > $DIFF
   EXITCODE=$?
