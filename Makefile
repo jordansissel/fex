@@ -55,13 +55,14 @@ package: test-package create-package
 
 pre-package:
 	rm -f VERSION fex_version.h fex.spec
+	$(MAKE) VERSION fex_version.h fex.spec
 
 rpm: package
 	rpmbuild -tb $(PACKAGE).tar.gz
 
-create-package: pre-package fex_version.h VERSION fex.spec
+create-package: pre-package 
 	mkdir $(PACKAGE)
-	rsync --exclude .svn -a `ls -d $(PACKAGE_FILES) 2> /dev/null` $(PACKAGE)/
+	git ls-files | cpio -p --make-directories $(PACKAGE)/ 
 	tar -zcf $(PACKAGE).tar.gz $(PACKAGE)/
 	rm -rf $(PACKAGE)
 
