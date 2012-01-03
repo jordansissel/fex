@@ -7,7 +7,7 @@ fi
 if [ -z "$MAJOR" -o -z "$RELEASE" -o -z "$REVISION" ] ; then
   MAJOR="1"
   RELEASE="$(date +%Y%m%d)"
-  REVISION="0"
+  REVISION="1"
 fi
 
 VERSION="$MAJOR.$RELEASE.$REVISION"
