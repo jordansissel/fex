@@ -14,6 +14,9 @@
 #include "snprintf_2.2/snprintf.h"
 #endif
 
+#include <sys/types.h>
+#include <regex.h>
+
 #include "fex.h"
 #include "fex_version.h"
 
@@ -33,6 +36,10 @@ static char *prog = NULL;
 #define READBUFSIZE (64<<10)
 
 void usage();
+void apply_range_selector(const char *field, const strlist_t *tokens,
+                          const char *buffer, strlist_t *results);
+void apply_pattern_selector(const char *field, const strlist_t *tokens,
+                            const char *buffer, strlist_t *results);
 
 strlist_t* strlist_new() {
   strlist_t *list;
@@ -53,7 +60,7 @@ void strlist_free(strlist_t *list) {
   free(list);
 }
 
-void strlist_append(strlist_t *list, char *str) {
+void strlist_append(strlist_t *list, const char *str) {
   list->items[list->nitems] = strdup(str);
 
   list->nitems++;
@@ -100,6 +107,7 @@ void usage() {
          "\n"
          "Fields start at 1, awk style. A field number of 0 means the whole\n"
          "string unchanged.\n"
+         "\n"
          "The first separator is implied as space ' '\n"
          "You can specify multiple fields with curly braces and numbers split\n"
          "by commas. Also valid in curly braces {} are number ranges. Number\n"
@@ -114,6 +122,8 @@ void usage() {
          "      'foo:bar:baz:fizz' by '0:{1,-1}' outputs 'foo:fizz'\n"
          "  {1:3}     Output tokens 1 through 3\n"
          "      'foo bar baz fizz' by '{1:3}' outputs 'foo bar baz'\n"
+         "  :/home/    First split by ':' and yield only fields matching the\n"
+         "             regexp /home'\n"
          "\n"
          " * Make sure you quote your extractions, or your shell may perform\n"
          "   some unintended expansion\n");
@@ -122,14 +132,22 @@ void usage() {
 void process_line(char *buf, int len, int argc, char **argv) {
   int i = 0;
   char *field = NULL;
+  int length = 0; /* track line length */
   for (i = 0; i < argc; i++) {
     field = extract(argv[i], buf);
     printf("%s", field);
+    length += strlen(field);
     free(field);
-    if (i < argc - 1)
+    if (i < argc - 1) {
+      length += 1;
       printf(" ");
+    }
   }
-  printf("\n");
+
+  if (length > 0) {
+    /* only print newlines if there's a field emitted to output */
+    printf("\n");
+  }
 }
 
 char *extract(char *format, char *buf) {
@@ -156,6 +174,7 @@ char *extract(char *format, char *buf) {
     strlist_t *tokens;
     strlist_t *fields;
     strlist_t *results;
+    int use_regexp = 0;
     char *fieldstr;
 
     tokenizer = tokenizer_greedy;
@@ -164,10 +183,15 @@ char *extract(char *format, char *buf) {
 
     /* All of these cases will advance the format string position */
     /* This if case is a reallly lame hack */
-    //printf("%s\n", format);
     if (isdigit(format[0]) || (format[0] == '-' && isdigit(format[1]))) {
+      /* the current format is a number (or negative number) */
       asprintf(&fieldstr, "%ld", strtol(format, &format, 10));
+
+      /* fieldstr is the field selector(s). ie; "1" in "a1" */
+      split(&fields, fieldstr, ",", tokenizer_greedy);
+      free(fieldstr);
     } else if (format[0] == '{') {
+      /* the current format marks the start of a group selector */
       int fieldlen;
       format++; /* Skip '{' */
       if (format[0] == '?') {
@@ -186,6 +210,31 @@ char *extract(char *format, char *buf) {
       memset(fieldstr, 0, fieldlen * sizeof(char));
       strncpy(fieldstr, format, fieldlen - 1);
       format += fieldlen;
+
+      /* fieldstr is the field selector(s). ie; "1,3" in a{1,3} */
+      split(&fields, fieldstr, ",", tokenizer_greedy);
+      free(fieldstr);
+    } else if (format[0] == '/') {
+      /* the current format char marks the start of a pattern selector */
+      int patternlen = 0;
+      format++; /* Skip '/' */
+      patternlen = strcspn(format, "/") + 1;
+      if (format[patternlen - 1] != '/') {
+        fprintf(stderr, "Could not find closing '/'. Bad format: %s\n",
+                (format - 1));
+        exit(1);
+      }
+
+      /* copy the pattern string (things between the '/' foo '/') */
+      fieldstr = calloc(patternlen, sizeof(char));
+      strncpy(fieldstr, format, patternlen - 1); /* copy up to the trailing '/' */
+
+      /* store the pattern string for applying later */
+      use_regexp = 1;
+      fields = strlist_new();
+      strlist_append(fields, fieldstr);
+
+      format += patternlen;
     } else {
       /* Error, this format is invalid? */
       fprintf(stderr, "Invalid format... %s\n", format);
@@ -195,89 +244,20 @@ char *extract(char *format, char *buf) {
     /* Split the input by sep using tokenizer */
     split(&tokens, buffer, sep, tokenizer);
 
-    /* fieldstr is the field selector(s). ie; "1,3" in a{1,3} */
-    split(&fields, fieldstr, ",", tokenizer_greedy);
-    free(fieldstr);
-
     int i = 0;
     //printf("\n");
-    //printf("nfields selected: %d", fields->nitems);
     for (i = 0; i < fields->nitems; i++) {
-      long start, end;
-      strlist_t *range;
       char *field = fields->items[i];
-      split(&range, field, ":", tokenizer_greedy);
-
-      if (range->nitems == 1) {
-        /* Support {N} and {N:} */
-        start = end = strtol(range->items[0], NULL, 10);
-
-        /* Support {:N} */
-        if (field[strlen(field) - 1] == ':')
-          end = (start > 0) ? tokens->nitems : 0;
-
-        /* Support {N:} */
-        if (field[0] == ':')
-          start = 1;
-      } else if (*field == ':') { 
-        /* Support {:} as whole all fields */
-        start = 0;
-        end = 0;
+      //printf("field: %s\n", field);
+      //for (int j = 0; j < tokens->nitems; j++) {
+        //printf("  token[%d]: %s\n", j, tokens->items[j]);
+      //}
+      if (use_regexp) {
+        apply_pattern_selector(field, tokens, buffer, results);
       } else {
-        start = strtol(range->items[0], NULL, 10);
-        end = strtol(range->items[1], NULL, 10);
+        apply_range_selector(field, tokens, buffer, results);
       }
-
-      int j;
-
-      /* Add 1 here because field indexing starts at 1, not 0 */
-      if (start < 0) {
-        start += tokens->nitems + 1;
-        /* For sanity, negative indexing shouldn't result in <= 0 values. */
-        /* XXX: Throw an error for a bad index? */
-        if (start < 0)
-          start = 1;
-      }
-
-      if (end < 0) {
-        end += tokens->nitems + 1;
-        if (end < 0)
-          end = start;
-      }
-
-      //printf("s/e= %ld %ld\n", start, end);
-
-      /* If end is 0, and set end to start. End of 0 doesn't make sense */
-      if (end == 0)
-        end = start;
-
-      //printf("%ld %ld\n", start, end);
-
-      if (start > end) {
-        fprintf(stderr, "start > end is invalid: %ld > %ld\n", start, end);
-        exit(1);
-      }
-
-      if (((start == 0) && (end != 0))
-          || ((start != 0) && (end == 0))) {
-        fprintf(stderr, 
-                "Start or end cannot be 0 when the other is not 0: %ld "
-                "and %ld\n", start, end);
-        exit(1);
-      }
-
-      /* We start indexing at 1. */
-      if (start == 0) {
-        strlist_append(results, buffer);
-      } else {
-        start--;
-        end--;
-
-        for (j = start; j < tokens->nitems && j <= end; j++) {
-          strlist_append(results, tokens->items[j]);
-        }
-      }
-      strlist_free(range);
+      
     }
 
     /* Free buffer then allocate a new one for the new string slice */
@@ -316,7 +296,7 @@ char *extract(char *format, char *buf) {
   return buffer;
 }
 
-void split(strlist_t **tokens, char *buf, char *sep, 
+void split(strlist_t **tokens, const char *buf, const char *sep, 
            char *(*tokenizer)(char *, const char*, char **)) {
 
   char *strptr = NULL;
@@ -362,4 +342,106 @@ char *tokenizer_nongreedy(char *str, const char *sep, char **last) {
   //printf("  Pos: %d\n", next_tok);
   //printf("  remain: %s\n", *last);
   return str;
+}
+
+void apply_range_selector(const char *field, const strlist_t *tokens,
+                          const char *buffer, strlist_t *results) {
+  long start, end;
+  strlist_t *range;
+  split(&range, field, ":", tokenizer_greedy);
+
+  if (range->nitems == 1) {
+    /* Support {N} and {N:} */
+    start = end = strtol(range->items[0], NULL, 10);
+
+    /* Support {:N} */
+    if (field[strlen(field) - 1] == ':')
+      end = (start > 0) ? tokens->nitems : 0;
+
+    /* Support {N:} */
+    if (field[0] == ':')
+      start = 1;
+  } else if (*field == ':') { 
+    /* Support {:} as whole all fields */
+    start = 0;
+    end = 0;
+  } else {
+    start = strtol(range->items[0], NULL, 10);
+    end = strtol(range->items[1], NULL, 10);
+  }
+
+  /* Add 1 here because field indexing starts at 1, not 0 */
+  if (start < 0) {
+    start += tokens->nitems + 1;
+    /* For sanity, negative indexing shouldn't result in <= 0 values. */
+    /* XXX: Throw an error for a bad index? */
+    if (start < 0)
+      start = 1;
+  }
+
+  if (end < 0) {
+    end += tokens->nitems + 1;
+    if (end < 0)
+      end = start;
+  }
+
+  //printf("s/e= %ld %ld\n", start, end);
+
+  /* If end is 0, and set end to start. End of 0 doesn't make sense */
+  if (end == 0)
+    end = start;
+
+  //printf("%ld %ld\n", start, end);
+
+  if (start > end) {
+    fprintf(stderr, "start > end is invalid: %ld > %ld\n", start, end);
+    exit(1);
+  }
+
+  if (((start == 0) && (end != 0))
+      || ((start != 0) && (end == 0))) {
+    fprintf(stderr, 
+            "Start or end cannot be 0 when the other is not 0: %ld "
+            "and %ld\n", start, end);
+    exit(1);
+  }
+
+  /* We start indexing at 1, zeor means 'the entire buffer' */
+  if (start == 0) {
+    strlist_append(results, buffer);
+  } else {
+    start--;
+    end--;
+
+    int i = 0;
+    for (i = start; i < tokens->nitems && i <= end; i++) {
+      strlist_append(results, tokens->items[i]);
+    }
+  }
+  strlist_free(range);
+}
+
+void apply_pattern_selector(const char *field, const strlist_t *tokens,
+                            const char *buffer, strlist_t *results) {
+  regex_t regex;
+  int rc;
+  rc = regcomp(&regex, field, REG_EXTENDED | REG_ICASE);
+  if (rc != 0) {
+    size_t errbuf_size = 1024;
+    size_t len = 0;
+    char *errbuf = NULL;
+    errbuf = calloc(errbuf_size, 1);
+    len = regerror(rc, &regex, errbuf, errbuf_size);
+    fprintf(stderr, "Regex compile failed (code %d): %.*s\n", rc, (int)len, errbuf);
+    exit(1); /* exiting from a nested call is really bad style, man... */
+  }
+
+  int i = 0;
+  for (i = 0; i < tokens->nitems; i++) {
+    rc = regexec(&regex, tokens->items[i], 0, NULL, 0);
+    if (rc == 0) { /* match successful */
+      strlist_append(results, tokens->items[i]);
+    }
+  }
+  regfree(&regex);
 }

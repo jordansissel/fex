@@ -12,11 +12,11 @@ typedef struct strlist {
 
 void process_line(char *buf, int len, int argc, char **argv);
 char *extract(char *format, char *buf);
-void split(strlist_t **tokens, char *buf, char *sep, 
+void split(strlist_t **tokens, const char *buf, const char *sep, 
            char *(*tokenizer)(char *, const char*, char **));
 char *tokenizer_greedy(char *str, const char *sep, char **last);
 char *tokenizer_nongreedy(char *str, const char *sep, char **last);
 
 strlist_t* strlist_new();
 void strlist_free(strlist_t *list);
-void strlist_append(strlist_t *list, char *str);
+void strlist_append(strlist_t *list, const char *str);

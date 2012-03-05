@@ -1,4 +1,4 @@
-CFLAGS=-g -Wall
+CFLAGS+=-g -Wall -std=c99
 CC=gcc
 STDIN_CC=-x c
 SNPRINTF_DEF=`sh need_snprintf.sh > /dev/null && echo "-DNEED_SNPRINTF_2_2"`
