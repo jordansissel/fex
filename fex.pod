@@ -1,0 +1,39 @@
+=pod
+
+=head1 NAME
+
+fex - simple and powerful field extraction
+
+=head1 SYNOPSIS
+
+B<fex> I<selector ...>
+
+=head1 DESCRIPTION
+
+=head1 SEE ALSO
+
+L<awk(1)>, L<cut(1)>, 
+
+Project site: L<http://www.semicomplete.com/projects/fex>
+
+Source Code: L<https://github.com/jordansissel/fex>
+
+=head1 CONTACT
+
+Please send questions to jls@semicomplete.com
+
+File bugs and feature requests at the following URL:
+
+L<https://github.com/jordansissel/fex/issues>
+
+Alternately, if you prefer email, feel free to file bugs by email.  Whatever
+works for you :)
+
+Patches, ideas, and other contributions by many, nice folks. See the CHANGELIST
+file for who provided what.
+
+=head1 AUTHOR
+
+fex was written by Jordan Sissel.
+
+=cut

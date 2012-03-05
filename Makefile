@@ -73,3 +73,9 @@ test-package: create-package
 	make -C $(PACKAGE) fex test
 	rm -rf $(PACKAGE)
 
+fex.1: fex.pod
+	pod2man -c "" -r "" $< > $@
+
+.PHONY: showman
+showman: fex.1
+	nroff -man $<
