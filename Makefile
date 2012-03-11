@@ -10,7 +10,7 @@ DESTDIR?=
 PREFIX?=/usr/local
 INSTALLBIN?=$(PREFIX)/bin
 INSTALLLIB?=$(PREFIX)/lib
-INSTALLMAN?=$(PREFIX)/man
+INSTALLMAN?=$(PREFIX)/share/man
 INSTALLINCLUDE?=$(PREFIX)/include
 
 DPREFIX=$(DESTDIR)$(PREFIX)
@@ -30,6 +30,9 @@ test:
 install: fex
 	install -d $(DINSTALLBIN)
 	install -m 755 fex $(DINSTALLBIN)/
+	install -d $(DINSTALLMAN)
+	install -d $(DINSTALLMAN)/man1
+	install fex.1 $(DINSTALLMAN)/man1/
 
 fex: fex.o
 	$(CC) $(CFLAGS) fex.o $(SNPRINTF_CC) -o $@
@@ -60,9 +63,11 @@ pre-package:
 rpm: package
 	rpmbuild -tb $(PACKAGE).tar.gz
 
-create-package: pre-package 
-	mkdir $(PACKAGE)
+create-package: pre-package fex.1 fex.spec
+	-rm -rf $(PACKAGE)
+	-mkdir $(PACKAGE)
 	git ls-files | cpio -p --make-directories $(PACKAGE)/ 
+	(echo "fex.spec"; echo "fex.1") | cpio -p --make-directories $(PACKAGE)/ 
 	tar -zcf $(PACKAGE).tar.gz $(PACKAGE)/
 	rm -rf $(PACKAGE)
 
