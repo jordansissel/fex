@@ -123,7 +123,7 @@ void usage() {
          "  {1:3}     Output tokens 1 through 3\n"
          "      'foo bar baz fizz' by '{1:3}' outputs 'foo bar baz'\n"
          "  :/home/    First split by ':' and yield only fields matching the\n"
-         "             regexp /home'\n"
+         "             regexp /home/'\n"
          "\n"
          " * Make sure you quote your extractions, or your shell may perform\n"
          "   some unintended expansion\n");
