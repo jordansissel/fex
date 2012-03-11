@@ -29,4 +29,4 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-, root, root, 0755)
 /usr/bin/fex
-
+/usr/share/man/man1/fex.1
