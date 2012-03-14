@@ -42,9 +42,6 @@ fex.o: fex_version.h
 fex_version.h:
 	sh version.sh --header > $@
 
-#VERSION:
-	#sh version.sh --shell > $@
-
 %.o: %.c
 	$(CC) $(SNPRINTF_DEF) $(CFLAGS) $< -c -o $@
 
@@ -57,7 +54,7 @@ clean:
 package: test-package create-package
 
 pre-package:
-	rm -f VERSION fex_version.h fex.spec
+	rm -f fex_version.h fex.spec
 	$(MAKE) VERSION fex_version.h fex.spec
 
 rpm: package
