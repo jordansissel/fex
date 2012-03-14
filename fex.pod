@@ -86,7 +86,7 @@ can be shown best by example, first:
   1..
 
 In the first example, fex uses '.' as delimiter and ignores empty fields. In the 
-second example, it does not ignore those empty fields.
+second example (non greedy), it does not ignore those empty fields.
 
 =item /regexp/
 
