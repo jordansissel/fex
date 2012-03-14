@@ -42,8 +42,8 @@ fex.o: fex_version.h
 fex_version.h:
 	sh version.sh --header > $@
 
-VERSION:
-	sh version.sh --shell > $@
+#VERSION:
+	#sh version.sh --shell > $@
 
 %.o: %.c
 	$(CC) $(SNPRINTF_DEF) $(CFLAGS) $< -c -o $@
@@ -52,7 +52,7 @@ fex.spec: fex.spec.in
 	sed -e 's/%{version}/$(VERSION)/' $< > $@
 
 clean:
-	rm -f fex *.o */*.o VERSION fex_version.h fex.spec || true
+	-rm -f fex *.o */*.o fex_version.h fex.spec fex.1 
 
 package: test-package create-package
 
