@@ -1,7 +1,9 @@
-1.20100416.*
-  - Trim extra trailing whitespace
-  - Fix crashing
-  - Provide rpm spec
+2.0.0 - 
+  - Add /regexp/ field selection (see manpage for usage)
+  - Trim extra trailing whitespace on fex output
+  - Fix crashing in printf
+  - Provide rpm spec ('make fex.spec' from source to generate it)
+  - Add manpage
 
 20071119 -
   - Add nongreedy tokenizer. Same semantics of strtok_r(), but doesn't skip
