@@ -1,7 +1,7 @@
 Name: fex
 Version: %{version}
 Release: 1
-License: BSD
+License: Apache 2.0
 URL: http://www.semicomplete.com/projects/fex/
 Source0:  http://semicomplete.googlecode.com/files/%{name}-%{version}.tar.gz
 Summary: field split/extraction like cut/awk with less typing
