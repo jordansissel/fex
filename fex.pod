@@ -39,7 +39,7 @@ A single number will select that numbered field. Like awk, field start at 1.
 Example selecting third field:
 
   % echo "a b c d e" | fex '3'
-  a b c d
+  c
 
 Example selecting the second field delimited by slash:
 
