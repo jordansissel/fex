@@ -148,6 +148,7 @@ void process_line(char *buf, int len, int argc, char **argv) {
     /* only print newlines if there's a field emitted to output */
     printf("\n");
   }
+  fflush(stdout);
 }
 
 char *extract(char *format, char *buf) {
