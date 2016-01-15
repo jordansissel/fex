@@ -22,7 +22,7 @@ DINSTALLINCLUDE=$(DESTDIR)$(INSTALLINCLUDE)
 VERSION=$(shell sh version.sh)
 PACKAGE=fex-$(VERSION)
 
-all: fex
+all: fex fex.1
 
 test:
 	cd t; sh test.sh
