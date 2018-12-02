@@ -20,7 +20,7 @@ try() {
   if [ "$EXITCODE" -eq 0 ] ; then
     echo "Test ($0/$TESTNAME) OK: $1" 
   else
-    echo "Test ($0/TESTNAME) failed: $1"
+    echo "Test ($0/$TESTNAME) failed: $1"
     echo "Output:"
     cat $DIFF
   fi
