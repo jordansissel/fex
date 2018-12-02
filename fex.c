@@ -164,7 +164,7 @@ char *extract(char *format, char *buf) {
 
   /* If first char is not a number or '{', use it to split instead of the
    * default of space */
-  if (!isdigit(format[0]) && (format[0] != '{') && (format[0] != '-')) {
+  if ((!isdigit(format[0]) && (format[0] != '{') && (format[0] != '-')) || (format[1] == '{' || format[1] == '/')) {
     sep[0] = format[0];
     format++;
   }

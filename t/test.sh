@@ -3,10 +3,10 @@
 . ./test.subr
 
 TESTS=
-if [ $# -gt 0 ]; then 
+if [ $# -gt 0 ]; then
   TESTS="$@"
 else
-  TESTS="basic numrange multifields othersplit multisplit greedy nongreedy"
+  TESTS="basic numrange multifields othersplit multisplit greedy nongreedy specialchars"
 fi
 
 set -- $TESTS
