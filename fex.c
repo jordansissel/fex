@@ -152,6 +152,11 @@ void process_line(char *buf, int len, int argc, char **argv) {
 }
 
 char *extract(char *format, char *buf) {
+  if (format[0] == '\0') {
+    fprintf(stderr, "Empty format string...\n");
+    exit(1);
+  }
+
   char *sep = NULL;
 
   char *buffer = strdup(buf);
