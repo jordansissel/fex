@@ -1,0 +1,19 @@
+To install:
+make install
+
+To install to a custom directory
+PREFIX=/my/custom/directory make install
+
+Required tools:
+gcc
+install
+sed
+make
+tar
+pod2man
+nroff?
+
+To build packages you also need:
+rpmbuild
+git
+
