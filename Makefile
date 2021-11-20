@@ -27,7 +27,7 @@ all: fex
 test:
 	cd t; sh test.sh
 
-install: fex
+install: fex fex.1
 	install -d $(DINSTALLBIN)
 	install -m 755 fex $(DINSTALLBIN)/
 	install -d $(DINSTALLMAN)
